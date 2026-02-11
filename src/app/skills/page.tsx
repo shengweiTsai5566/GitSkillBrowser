@@ -3,12 +3,12 @@
 import { SkillCard } from "@/components/features/SkillCard";
 import { SkillFilter } from "@/components/features/SkillFilter";
 import { Skill } from "@/types/skill";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/components/providers/LanguageProvider";
 import { Loader2 } from "lucide-react";
 
-export default function SkillsPage() {
+function SkillsContent() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const searchParams = useSearchParams();
@@ -62,5 +62,17 @@ export default function SkillsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SkillsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center py-32">
+        <Loader2 className="h-12 w-12 animate-spin text-slate-300" />
+      </div>
+    }>
+      <SkillsContent />
+    </Suspense>
   );
 }
