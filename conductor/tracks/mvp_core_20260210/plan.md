@@ -32,7 +32,7 @@ This plan outlines the steps to build the core infrastructure for the Agent Skil
 - [x] Task: Write Playwright E2E Test: Full Integration Test (Register -> List -> View Detail)
 - [x] Task: Conductor - User Manual Verification 'Phase 3: API Implementation & Real Integration' (Protocol in workflow.md)
 
-## Phase 4: Final MVP Integration & Polish
-- [x] Task: Implement basic Security/Secret scanning regex
-- [x] Task: Final project-wide linting and type checking
-- [x] Task: Conductor - User Manual Verification 'Phase 4: Final MVP Integration & Polish' (Protocol in workflow.md)
+## Phase 4: Final MVP Integration & Polish [checkpoint: 2dddb3a]
+- [x] Task: Implement basic Security/Secret scanning regex 2dddb3a
+- [x] Task: Final project-wide linting and type checking 2dddb3a
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Final MVP Integration & Polish' (Protocol in workflow.md) 2dddb3a
