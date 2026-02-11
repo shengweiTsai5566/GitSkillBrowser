@@ -1,0 +1,179 @@
+# SkillBrowser 🚀
+
+[中文版](#中文版) | [English Version](#english-version)
+
+---
+
+## 中文版
+
+**SkillBrowser** 是一個為 AI Agent 設計的技能探索與索引平台。它允許開發者透過己搭建的 Git 倉庫自動索引 Agent 技能，並提供介面供使用者搜尋、瀏覽與下載。
+
+### ✨ 核心特色
+- **Git 自動索引**：直接從 Gitea/GitHub 倉庫抓取 `SKILL.md` 或 `SKILL.zh.md` 並自動生成文檔(關鍵字為skill,agent)。
+- **雙語支援**：全站支援中英文切換，預設優先顯示中文內容。
+- **下載次數統計**：即時統計技能下載量，幫助社群識別熱門與高品質工具。
+- **安全性掃描**：內建自動化掃描，防止敏感資訊（如 API 金鑰）洩漏在公開文檔中。
+- **Neobrutalism 設計**：採用現代、強烈且具視覺衝擊力的設計風格（粗邊框、強影陰）。
+- **二層加密安全**：除了系統級加密，還支援選用「個人金鑰」進行二次加密，保護您的 Git Token。
+
+### 🛠️ 技術棧
+- **全端框架**: [Next.js 14](https://nextjs.org/) (App Router)
+- **程式語言**: TypeScript
+- **資料庫 ORM**: [Prisma](https://www.prisma.io/)
+- **資料庫實體**: PostgreSQL
+- **樣式設計**: Tailwind CSS + shadcn/ui
+- **測試工具**: Vitest (單元測試), Playwright (E2E 測試)
+
+### 📦 環境架設與安裝
+
+#### 1. 複製專案
+```bash
+git clone <your-repo-url>
+cd SkillBrowser
+```
+
+#### 2. 安裝依賴
+```bash
+npm install
+```
+
+#### 3. 環境變數設定
+複製 `.env.example` 並更名為 `.env`，並填入必要資訊（如 `DATABASE_URL` 與 `INTERNAL_GIT_URL`）。
+
+#### 4. 啟動資料庫 (使用 Podman/Docker)
+建議使用 Podman 建立開發資料庫環境：
+```bash
+podman run --name postgres-skill \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=skillbrowser \
+  -p 5433:5432 -d postgres
+```
+
+**🔑 資料庫登入資訊：**
+- **使用者名稱**: `postgres`
+- **密碼**: `password`
+- **資料庫名稱**: `skillbrowser`
+- **存取埠號**: `5433`
+
+**🔗 連線字串參考：**
+- **Prisma (.env)**: `postgresql://postgres:password@localhost:5433/skillbrowser?schema=public`
+- **JDBC (DBeaver)**: `jdbc:postgresql://localhost:5433/skillbrowser`
+
+#### 5. 初始化與啟動
+```bash
+npx prisma migrate dev  # 初始化資料庫結構
+npm run dev             # 啟動開發伺服器 (http://localhost:3000)
+```
+
+---
+
+### 🧪 測試說明
+- **單元測試**: `npm run test:unit` - 驗證認證邏輯、資料庫操作與加解密函式。
+- **端對端測試**: `npm run test:e2e` - 模擬真實使用者從登錄到註冊、瀏覽、下載的完整流程。
+
+---
+
+### 📖 使用指南
+
+#### A. 首次登錄與安全
+1. **認證模式**: 選擇 **Internal Git** 模式。
+2. **獲取 Token**: 前往您的 Git 伺服器 (Gitea) -> 設定 -> 應用程式 -> 產生令牌。
+3. **二層保險金鑰**: 您可以輸入自訂的 **Personal Encryption Key**。系統**不會儲存**此金鑰，僅用於加密您的 Token 存入資料庫，確保極高安全性。
+
+#### B. 註冊與同步技能
+1. 前往 **Register Skill**。
+2. 系統會列出您的 Git 倉庫，點擊 **"Sync This Repo"** 或 **"Resync"**。
+3. 系統會擷取 `SKILL.zh.md` (優先) 或 `SKILL.md` 作為首頁說明，並統計下載量。
+
+---
+
+## English Version
+
+**SkillBrowser** is a discovery and indexing platform designed for AI Agent skills. It enables developers to automatically index agent capabilities via Git repositories and provides a bold interface for users to search, browse, and download skills.
+
+### ✨ Key Features
+- **Git Auto-Indexing**: Directly fetch and index `SKILL.md` or `SKILL.zh.md` from Gitea/GitHub repositories.
+- **Bilingual Support**: Full-site support for Chinese (ZH) and English (EN), defaulting to ZH.
+- **Download Tracking**: Real-time download metrics to help the community identify popular and high-quality tools.
+- **Security Scanning**: Automated detection of potential secrets (e.g., API Keys) in the documentation.
+- **Neobrutalism Design**: Modern, bold visual style featuring thick borders and strong shadows.
+- **Two-Layer Encryption**: Supports an optional "Personal Encryption Key" for secondary protection of your Git Tokens.
+
+### 🛠️ Tech Stack
+- **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
+- **Language**: TypeScript
+- **ORM**: [Prisma](https://www.prisma.io/)
+- **Database**: PostgreSQL
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Testing**: Vitest (Unit), Playwright (E2E)
+
+### 📦 Setup & Installation
+
+#### 1. Clone Project
+```bash
+git clone <your-repo-url>
+cd SkillBrowser
+```
+
+#### 2. Install Dependencies
+```bash
+npm install
+```
+
+#### 3. Environment Configuration
+Copy `.env.example` to `.env` and fill in necessary information (e.g., `DATABASE_URL`, `INTERNAL_GIT_URL`).
+
+#### 4. Start Database (via Podman/Docker)
+It is recommended to use Podman to set up the development database:
+```bash
+podman run --name postgres-skill \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=skillbrowser \
+  -p 5433:5432 -d postgres
+```
+
+**🔑 Database Credentials:**
+- **User**: `postgres`
+- **Password**: `password`
+- **Database Name**: `skillbrowser`
+- **Port**: `5433`
+
+**🔗 Connection Strings:**
+- **Prisma (.env)**: `postgresql://postgres:password@localhost:5433/skillbrowser?schema=public`
+- **JDBC (DBeaver)**: `jdbc:postgresql://localhost:5433/skillbrowser`
+
+#### 5. Initialization
+```bash
+npx prisma migrate dev  # Initialize database schema
+npm run dev             # Start dev server (http://localhost:3000)
+```
+
+---
+
+### 🧪 Testing
+- **Unit Tests**: `npm run test:unit` - Verifies auth logic, DB operations, and encryption functions.
+- **E2E Tests**: `npm run test:e2e` - Simulates the full user flow from login to registration, browsing, and downloading.
+
+---
+
+### 📖 User Guide
+
+#### A. First-Time Login & Security
+1. **Auth Mode**: Select **Internal Git** mode.
+2. **Get Token**: Go to your Git server (Gitea) -> Settings -> Applications -> Generate Token.
+3. **Personal Key**: You can enter a **Personal Encryption Key**. The system **does not store** this key; it is only used to encrypt your Token for the database.
+
+#### B. Registering & Syncing Skills
+1. Go to **Register Skill**.
+2. Select your repository and click **"Sync This Repo"** or **"Resync"**.
+3. The system fetches `SKILL.zh.md` (preferred) or `SKILL.md` for display and tracks download metrics.
+
+---
+
+## 🤝 Contribution
+Contributions and bug reports are welcome! As my first open-source project, I appreciate all your support.
+
+## 📄 License
+[MIT License](LICENSE)

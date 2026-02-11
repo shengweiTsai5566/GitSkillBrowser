@@ -1,0 +1,36 @@
+# ==============================================
+# Database Configuration
+# ==============================================
+DATABASE_URL="postgresql://postgres:password@localhost:5432/skillbrowser?schema=public"
+
+# ==============================================
+# NextAuth Configuration
+# ==============================================
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-super-secret-key-change-me"
+
+# ==============================================
+# Authentication Mode Selection
+# Options: 'public' | 'internal' | 'dev'
+# ==============================================
+AUTH_MODE="public"
+
+# Option 1: Public Mode (GitHub.com)
+# Register at: https://github.com/settings/applications/new
+GITHUB_ID=""
+GITHUB_SECRET=""
+
+# Option 2: Internal Mode (GitLab Self-Managed)
+# Your internal GitLab instance URL
+INTERNAL_GIT_URL="https://gitlab.your-company.com"
+GITLAB_CLIENT_ID=""
+GITLAB_CLIENT_SECRET=""
+
+# Option 3: Dev Mode (Skip Git Certs)
+# No additional config needed. Uses simulated login.
+
+# ==============================================
+# Security Configuration
+# ==============================================
+# 32-character or longer random string used for AES encryption
+ENCRYPTION_KEY=""
