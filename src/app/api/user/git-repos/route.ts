@@ -49,19 +49,18 @@ export async function GET(req: NextRequest) {
 
     const myRepos = repos
       .filter((repo: any) => {
-        const name = (repo.name || "").toLowerCase();
-        const desc = (repo.description || "").toLowerCase();
-        return name.includes("skill") || name.includes("agent") || 
-               desc.includes("skill") || desc.includes("agent");
+        // 改為使用 Gitea/GitHub 的 topic (主題) 進行判斷
+        // 只有當儲存庫的主題包含 "skill" 時才視為 Skill 專案
+        const topics = repo.topics || [];
+        return Array.isArray(topics) && topics.includes("skill");
       })
       .map((repo: any) => {
         // 尋找是否已註冊
         const registered = registeredSkills.find(s => s.repoUrl === repo.html_url);
         const latestVersion = registered?.versions[0];
         
-        // 判別是否有新版本 (簡單判別：Git 的更新時間晚於資料庫紀錄)
-        // 這裡也可以改用 commit hash 比對，但目前 Gitea API 回傳的 repo 物件包含 updated_at
-        const hasUpdate = registered && latestVersion ? new Date(repo.updated_at) > new Date(latestVersion.createdAt) : false;
+        // 判別是否有新版本 (改用 pushed_at 以確保是程式碼變動，而非 metadata 變動)
+        const hasUpdate = registered && latestVersion ? new Date(repo.pushed_at) > new Date(latestVersion.createdAt) : false;
 
         return {
           id: registered?.id || null,
@@ -74,12 +73,10 @@ export async function GET(req: NextRequest) {
           isSkill: true,
           isRegistered: !!registered,
           hasUpdate: hasUpdate,
-          lastGitUpdate: repo.updated_at,
+          lastGitUpdate: repo.pushed_at,
           localUpdate: latestVersion?.createdAt || null
         };
       });
-
-    return NextResponse.json(myRepos);
 
     return NextResponse.json(myRepos);
   } catch (error: any) {

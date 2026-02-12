@@ -11,7 +11,8 @@
 **SkillBrowser** 是一個為 AI Agent 設計的技能探索與索引平台。它允許開發者透過己搭建的 Git 倉庫自動索引 Agent 技能，並提供介面供使用者搜尋、瀏覽與下載。
 
 ### ✨ 核心特色
-- **Git 自動索引**：直接從 Gitea/GitHub 倉庫抓取 `SKILL.md` 或 `SKILL.zh.md` 並自動生成文檔(關鍵字為skill,agent)。
+- **Git 自動索引**：直接從 Gitea/GitHub 倉庫抓取 `SKILL.md` 或 `SKILL.ZH.md` 並自動生成文檔。
+- **標準模板下載**：提供符合規範的 Skill 初始模板（包含標準目錄結構與雙語文件），降低開發門檻。
 - **雙語支援**：全站支援中英文切換，預設優先顯示中文內容。
 - **下載次數統計**：即時統計技能下載量，幫助社群識別熱門與高品質工具。
 - **安全性掃描**：內建自動化掃描，防止敏感資訊（如 API 金鑰）洩漏在公開文檔中。
@@ -92,8 +93,9 @@ npm run dev             # 啟動開發伺服器 (http://localhost:3000)
 
 #### B. 註冊與同步技能
 1. 前往 **Register Skill**。
-2. 系統會列出您的 Git 倉庫，點擊 **"Sync This Repo"** 或 **"Resync"**。
-3. 系統會擷取 `SKILL.zh.md` (優先) 或 `SKILL.md` 作為首頁說明，並統計下載量。
+2. **下載開發模板**：點擊右上角的 **"Download Template"**，獲取包含標準五大目錄結構 (`references`, `resources`, `examples`, `scripts`, `assets`) 與雙語文件樣板的 ZIP 包。
+3. **發布技能**：在您的 Git 倉庫中上傳符合上述結構的內容，並確保倉庫帶有 `skill` 主題 (Topic)。
+4. **同步索引**：在頁面列表中點擊 **"Sync This Repo"** 或 **"Resync"** 完成註冊。
 
 ---
 
@@ -102,7 +104,8 @@ npm run dev             # 啟動開發伺服器 (http://localhost:3000)
 **SkillBrowser** is a discovery and indexing platform designed for AI Agent skills. It enables developers to automatically index agent capabilities via Git repositories and provides a bold interface for users to search, browse, and download skills.
 
 ### ✨ Key Features
-- **Git Auto-Indexing**: Directly fetch and index `SKILL.md` or `SKILL.zh.md` from Gitea/GitHub repositories.
+- **Git Auto-Indexing**: Directly fetch and index `SKILL.md` or `SKILL.ZH.md` from Gitea/GitHub repositories.
+- **Standard Template Download**: Provides a compliant Skill starter kit (including standard directory structure and bilingual templates) to simplify development.
 - **Bilingual Support**: Full-site support for Chinese (ZH) and English (EN), defaulting to ZH.
 - **Download Tracking**: Real-time download metrics to help the community identify popular and high-quality tools.
 - **Security Scanning**: Automated detection of potential secrets (e.g., API Keys) in the documentation.

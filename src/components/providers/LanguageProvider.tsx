@@ -12,7 +12,9 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocale] = useState<Locale>("zh");
+  // Use NEXT_PUBLIC_DEFAULT_LOCALE from .env, default to "en" if not specified
+  const defaultLocale = (process.env.NEXT_PUBLIC_DEFAULT_LOCALE as Locale) || "en";
+  const [locale, setLocale] = useState<Locale>(defaultLocale);
 
   // Load from localStorage on mount
   useEffect(() => {

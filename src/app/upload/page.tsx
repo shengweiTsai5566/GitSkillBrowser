@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GitBranch, Globe, Info, Loader2, AlertCircle, Search, Zap, Star } from "lucide-react";
+import { GitBranch, Globe, Info, Loader2, AlertCircle, Search, Zap, Star, Download } from "lucide-react";
+import { useLanguage } from "@/components/providers/LanguageProvider";
 
 interface GitRepo {
   id: string | null;
@@ -22,6 +23,7 @@ interface GitRepo {
 
 export default function UploadPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [repoUrl, setRepoUrl] = useState("");
   const [ref, setRef] = useState("main");
   const [isLoading, setIsLoading] = useState(false);
@@ -102,17 +104,26 @@ export default function UploadPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-10">
-      <div className="mb-12 border-b-4 border-black pb-8 flex justify-between items-end">
+      <div className="mb-12 border-b-4 border-black pb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-          <h1 className="text-5xl font-black tracking-tight uppercase italic">Register Skill</h1>
+          <h1 className="text-5xl font-black tracking-tight uppercase italic">{t.upload.title}</h1>
           <p className="text-xl font-bold text-slate-500 mt-2">
-            Sync your Git repository with the Skill Browser index.
+            {t.upload.subtitle}
           </p>
         </div>
-        <Button onClick={discover} variant="outline" className="border-2 border-black font-black uppercase italic" disabled={isDiscovering}>
-          {isDiscovering ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-          Refresh List
-        </Button>
+        
+        <div className="flex gap-4">
+          <a href="/api/template" download>
+            <Button variant="outline" className="border-2 border-black font-black uppercase italic bg-white hover:bg-slate-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]">
+              <Download className="h-4 w-4 mr-2" />
+              {t.upload.download_template}
+            </Button>
+          </a>
+          <Button onClick={discover} variant="outline" className="border-2 border-black font-black uppercase italic shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]" disabled={isDiscovering}>
+            {isDiscovering ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+            {t.upload.refresh}
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -126,7 +137,7 @@ export default function UploadPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h2 className="text-2xl font-black uppercase flex items-center gap-2">
             <Search className="h-6 w-6 stroke-[3]" /> 
-            Git Projects ({filteredRepos.length})
+            {t.upload.git_projects} ({filteredRepos.length})
           </h2>
           
           <div className="flex bg-slate-200 p-1 rounded-xl border-2 border-black">
@@ -134,25 +145,25 @@ export default function UploadPage() {
               onClick={() => setFilter("all")}
               className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase transition-all ${filter === "all" ? "bg-black text-white" : "hover:bg-slate-300"}`}
             >
-              All
+              {t.upload.filter_all}
             </button>
             <button 
               onClick={() => setFilter("new")}
               className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase transition-all ${filter === "new" ? "bg-yellow-400 text-black border-2 border-black -translate-y-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : "hover:bg-slate-300"}`}
             >
-              Unregistered
+              {t.upload.filter_new}
             </button>
             <button 
               onClick={() => setFilter("registered")}
               className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase transition-all ${filter === "registered" ? "bg-green-500 text-white border-2 border-black -translate-y-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : "hover:bg-slate-300"}`}
             >
-              Registered
+              {t.upload.filter_registered}
             </button>
             <button 
               onClick={() => setFilter("updates")}
               className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase transition-all ${filter === "updates" ? "bg-blue-500 text-white border-2 border-black -translate-y-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] animate-pulse" : "hover:bg-slate-300"}`}
             >
-              Updatable
+              {t.upload.filter_updates}
             </button>
           </div>
         </div>
@@ -161,7 +172,7 @@ export default function UploadPage() {
           {isDiscovering ? (
             <div className="flex flex-col items-center justify-center h-[400px] space-y-4">
               <Loader2 className="h-12 w-12 animate-spin text-primary stroke-[3]" />
-              <p className="font-black text-slate-500 uppercase tracking-widest text-sm">Scanning Gitea...</p>
+              <p className="font-black text-slate-500 uppercase tracking-widest text-sm">{t.upload.scanning}</p>
             </div>
           ) : filteredRepos.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -172,12 +183,12 @@ export default function UploadPage() {
                   <div className="absolute -top-3 -right-3 flex flex-col gap-2 items-end">
                     {repo.isRegistered && (
                       <span className="bg-green-500 text-white text-[10px] font-black px-2 py-1 rounded border-2 border-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                        Registered
+                        {t.upload.status_registered}
                       </span>
                     )}
                     {repo.hasUpdate && (
                       <span className="bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded border-2 border-black uppercase animate-bounce shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                        New Update!
+                        {t.upload.status_update}
                       </span>
                     )}
                   </div>
@@ -199,7 +210,7 @@ export default function UploadPage() {
                           disabled={isLoading}
                         >
                           {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />} 
-                          {repo.hasUpdate ? "Update Index" : "Resync"}
+                          {repo.hasUpdate ? t.upload.btn_update : t.upload.btn_resync}
                         </Button>
                         <Button 
                           variant="destructive"
@@ -218,7 +229,7 @@ export default function UploadPage() {
                         disabled={isLoading}
                       >
                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2 fill-current" />} 
-                        Sync This Repo
+                        {t.upload.btn_sync}
                       </Button>
                     )}
                   </div>
@@ -229,7 +240,7 @@ export default function UploadPage() {
             <div className="text-center py-24 flex flex-col items-center gap-4 opacity-30">
               <Search className="h-16 w-12" />
               <p className="font-black uppercase italic">
-                {filter === "all" ? "No repositories found." : `No repositories match the "${filter}" filter.`}
+                {filter === "all" ? t.upload.no_repos : `No repositories match the "${filter}" filter.`}
               </p>
             </div>
           )}
