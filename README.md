@@ -1,3 +1,5 @@
+![SkillBrowser Preview](index.png)
+
 # SkillBrowser 🚀
 
 [中文版](#中文版) | [English Version](#english-version)
@@ -23,6 +25,13 @@
 - **資料庫實體**: PostgreSQL
 - **樣式設計**: Tailwind CSS + shadcn/ui
 - **測試工具**: Vitest (單元測試), Playwright (E2E 測試)
+### 🌐 Git 平台相容性 (Git Platform Compatibility)
+本專案的設計高度相容於 **Gitea** 與 **GitHub**。以下是相關技術說明：
+
+*   **為什麼能同時支援？** 由於 Gitea API 遵循 GitHub API 標準，因此本專案的 Token 驗證與資料抓取機制在兩個平台上是通用的。
+*   **如何切換到 GitHub？** 僅需修改 `.env` 環境變數中的 `INTERNAL_GIT_URL`，將其改為 `https://api.github.com` 即可。
+*   **自動索引機制 (Topics)**：為了精準篩選，系統會自動抓取您名下且在 Git 平台上標記有 **`skill`** 主題 (Topic) 的儲存庫，而不是盲目抓取所有專案。
+*   **版本更新判斷**：系統統一使用 Git 的 `pushed_at` 欄位進行判斷，確保只有在真正的程式碼推送時才會觸發「更新」提示。
 
 ### 📦 環境架設與安裝
 
@@ -107,6 +116,14 @@ npm run dev             # 啟動開發伺服器 (http://localhost:3000)
 - **Database**: PostgreSQL
 - **Styling**: Tailwind CSS + shadcn/ui
 - **Testing**: Vitest (Unit), Playwright (E2E)
+
+### 🌐 Git Platform Compatibility
+This project is designed to be highly compatible with both **Gitea** and **GitHub**. Here are the technical details:
+
+*   **Why Dual Support?** Since the Gitea API follows the GitHub API standard, the Token-based authentication and data-fetching mechanisms are universal across both platforms.
+*   **How to Switch to GitHub?** Simply modify the `INTERNAL_GIT_URL` in your `.env` file and set it to `https://api.github.com`.
+*   **Auto-Indexing via Topics**: To ensure precise filtering, the system automatically fetches repositories under your account that are tagged with the **`skill`** topic, rather than indexing every project.
+*   **Update Detection**: The platform uses the `pushed_at` field to accurately detect real code updates, ignoring metadata changes like description or star updates.
 
 ### 📦 Setup & Installation
 
