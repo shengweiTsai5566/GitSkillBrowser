@@ -52,3 +52,6 @@ Thumbs.db
 # Project specific
 /test-results/
 /playwright-report/
+
+asset/
+conductor/
