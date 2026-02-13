@@ -1,9 +1,9 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { NextAuthOptions } from "next-auth";
-import GitHubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import { encrypt, decrypt } from "./encryption";
+import { gitClient } from "./git-client";
 
 const prisma = new PrismaClient();
 
@@ -22,8 +22,7 @@ const getProviders = () => {
           userKey: { label: "Personal Encryption Key", type: "password" }
         },
         async authorize(credentials) {
-          const gitUrl = (process.env.INTERNAL_GIT_URL || "").replace(/\/$/, "");
-          if (!gitUrl || !credentials?.email) return null;
+          if (!credentials?.email) return null;
 
           const email = credentials.email.trim().toLowerCase();
           const userKey = credentials.userKey;
@@ -42,37 +41,32 @@ const getProviders = () => {
 
           if (!tokenToUse) throw new Error("TOKEN_REQUIRED");
 
-          process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
           try {
-            const res = await fetch(`${gitUrl}/api/v1/user`, {
-              headers: { "Authorization": `token ${tokenToUse}` },
-              cache: 'no-store'
-            });
+            // Use unified git client (Supports Gitea & GitHub)
+            const res = await gitClient.getUser(tokenToUse);
 
-            if (res.ok) {
-              const gitUser = await res.json();
+            if (res.status === 200) {
+              const gitUser = res.data;
               const encryptedToken = encrypt(tokenToUse, userKey);
 
               const dbUser = await prisma.user.upsert({
                 where: { email },
                 update: {
-                  name: gitUser.full_name || gitUser.login,
+                  name: gitUser.full_name || gitUser.login || gitUser.username, // GitHub uses login, Gitea uses username/login
                   image: gitUser.avatar_url,
                   gitToken: encryptedToken,
                   useUserKey: !!userKey,
                 },
                 create: {
                   email,
-                  name: gitUser.full_name || gitUser.login,
+                  name: gitUser.full_name || gitUser.login || gitUser.username,
                   image: gitUser.avatar_url,
-                  provider: "gitea",
+                  provider: "git",
                   gitToken: encryptedToken,
                   useUserKey: !!userKey,
                 },
               });
 
-              // 確保回傳物件包含 userKey
               return { 
                 id: dbUser.id, 
                 name: dbUser.name, 
@@ -84,7 +78,9 @@ const getProviders = () => {
               throw new Error("INVALID_TOKEN");
             }
           } catch (e: any) {
-            console.error("[AUTH] Gitea Fetch Error:", e.message);
+            console.error("[AUTH] Git Fetch Error:", e.message);
+            // Throw specific errors for UI handling
+            if (e.response?.status === 401) throw new Error("INVALID_TOKEN");
             throw e;
           }
         }

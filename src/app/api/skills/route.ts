@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { scanContent } from "@/lib/security";
 import { decrypt } from "@/lib/encryption";
+import { gitClient } from "@/lib/git-client";
 
 const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
@@ -52,52 +53,25 @@ function extractMetadata(content: string, defaultName: string) {
   return metadata;
 }
 
-async function fetchGiteaFile(url: string, token: string) {
-  console.log(`[DEBUG] Sync attempting: ${url}`);
-  try {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-    const res = await fetch(url, {
-      headers: { "Authorization": `token ${token}` },
-      cache: 'no-store'
-    });
-    if (res.ok) {
-      const text = await res.text();
-      console.log(`[DEBUG] Sync success! File length: ${text.length}`);
-      return text;
-    }
-    console.warn(`[DEBUG] Sync failed: ${res.status} for ${url}`);
-    return null;
-  } catch (e: any) {
-    console.error(`[DEBUG] Sync Network Error: ${e.message}`);
-    return null;
-  }
-}
-
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { repoUrl, version = "1.0.0", ref = "main" } = await req.json();
+    const { repoUrl, version = "1.0.0", ref = "main", customTags = [] } = await req.json();
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user?.gitToken) return NextResponse.json({ error: "Token not found" }, { status: 400 });
 
     const userKey = (session.user as any).userKey;
     const decryptedToken = decrypt(user.gitToken, userKey);
     
-    // 重要：取得 Gitea 基礎網址
-    const gitUrl = (process.env.INTERNAL_GIT_URL || "").replace(/\/$/, "");
-    
-    // 解析 owner 和 repo
+    // 解析 repoName (僅用於 metadata default name)
     const urlParts = repoUrl.replace(/\.git$/, "").split('/').filter(Boolean);
-    const repoName = urlParts.pop();
-    const owner = urlParts.pop();
-
-    if (!owner || !repoName) throw new Error("Could not parse owner/repo from URL");
+    const repoName = urlParts.pop() || "unknown-skill";
 
     let readmeZH = null;
     let readmeEN = null;
-    let actualRef = ref; // 記錄實際找到的分支
+    let actualRef = ref;
     
     // 嘗試的分支清單
     const branchesToTry = [ref];
@@ -109,10 +83,9 @@ export async function POST(req: NextRequest) {
     outerZH:
     for (const targetRef of branchesToTry) {
       for (const f of zhFiles) {
-        const fullUrl = `${gitUrl}/${owner}/${repoName}/raw/branch/${targetRef}/${f}`;
-        readmeZH = await fetchGiteaFile(fullUrl, decryptedToken);
+        readmeZH = await gitClient.getRawContent(repoUrl, targetRef, f, decryptedToken);
         if (readmeZH) {
-          actualRef = targetRef; // 更新為成功的分支
+          actualRef = targetRef;
           break outerZH;
         }
       }
@@ -123,10 +96,8 @@ export async function POST(req: NextRequest) {
     outerEN:
     for (const targetRef of branchesToTry) {
       for (const f of enFiles) {
-        const fullUrl = `${gitUrl}/${owner}/${repoName}/raw/branch/${targetRef}/${f}`;
-        readmeEN = await fetchGiteaFile(fullUrl, decryptedToken);
+        readmeEN = await gitClient.getRawContent(repoUrl, targetRef, f, decryptedToken);
         if (readmeEN) {
-          // 如果中文沒找到，以英文版的分支為準
           if (!readmeZH) actualRef = targetRef;
           break outerEN;
         }
@@ -134,16 +105,20 @@ export async function POST(req: NextRequest) {
     }
 
     if (!readmeZH && !readmeEN) {
-      console.error(`[DEBUG] No documentation found in branches: ${branchesToTry.join(', ')}`);
-      return NextResponse.json({ error: "No documentation found" }, { status: 400 });
+      return NextResponse.json({ error: "No documentation found (SKILL.md or README.md)" }, { status: 400 });
     }
 
     const metadata = extractMetadata(readmeEN || readmeZH || "", repoName);
     const metadataZH = readmeZH ? extractMetadata(readmeZH, repoName) : null;
     const scan = scanContent(readmeEN || readmeZH || "");
 
-    console.log(`[DEBUG] Metadata Extracted - EN Desc: ${metadata.description?.slice(0, 30)}...`);
-    console.log(`[DEBUG] Metadata Extracted - ZH Desc: ${metadataZH?.description?.slice(0, 30)}...`);
+    // DEBUG LOGS
+    console.log("[DEBUG] Received customTags:", customTags);
+    console.log("[DEBUG] Metadata tags:", metadata.tags);
+
+    // Merge tags: Metadata Tags + Custom Tags
+    const finalTags = Array.from(new Set([...metadata.tags, ...customTags])).filter(Boolean);
+    console.log("[DEBUG] Final Tags to Save:", finalTags);
 
     const skill = await prisma.skill.upsert({
       where: { name: metadata.name },
@@ -152,7 +127,7 @@ export async function POST(req: NextRequest) {
         descriptionZH: metadataZH?.description || null,
         repoUrl,
         category: metadata.category,
-        tags: metadata.tags,
+        tags: finalTags, // FIXED: Use finalTags instead of metadata.tags
         ownerId: user.id,
       },
       create: {
@@ -161,7 +136,7 @@ export async function POST(req: NextRequest) {
         descriptionZH: metadataZH?.description || null,
         repoUrl,
         category: metadata.category,
-        tags: metadata.tags,
+        tags: finalTags, // FIXED: Use finalTags instead of metadata.tags
         ownerId: user.id,
       },
     });
@@ -173,7 +148,7 @@ export async function POST(req: NextRequest) {
         readmeContentZH: readmeZH, 
         metadata, 
         securityStatus: scan.isSafe ? "safe" : "warn", 
-        commitHash: actualRef // 存儲實際找到的分支
+        commitHash: actualRef 
       },
       create: { 
         skillId: skill.id, 
@@ -182,7 +157,7 @@ export async function POST(req: NextRequest) {
         readmeContentZH: readmeZH, 
         metadata, 
         securityStatus: scan.isSafe ? "safe" : "warn", 
-        commitHash: actualRef // 存儲實際找到的分支
+        commitHash: actualRef 
       },
     });
 
@@ -197,16 +172,30 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const query = searchParams.get("query");
+    const tagsParam = searchParams.get("tags");
     const sort = searchParams.get("sort") || "newest";
     
     const where: any = {};
+    
+    // Text Search
     if (query) {
       where.OR = [
         { name: { contains: query, mode: "insensitive" } },
         { description: { contains: query, mode: "insensitive" } },
         { descriptionZH: { contains: query, mode: "insensitive" } },
-        { tags: { has: query } }
+        // We can keep tag search in text query too, or rely on specific filter
+        { tags: { has: query } } 
       ];
+    }
+
+    // Tag Filter (OR logic: hasSome)
+    if (tagsParam) {
+      const tags = tagsParam.split(",").filter(Boolean);
+      if (tags.length > 0) {
+        // If text query exists, we need to combine them with AND
+        // Prisma implicit AND: just add another property to `where`
+        where.tags = { hasSome: tags };
+      }
     }
 
     const orderBy: any = {};

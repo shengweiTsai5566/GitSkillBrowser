@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { decrypt } from "@/lib/encryption";
+import { gitClient } from "@/lib/git-client";
 
 const prisma = new PrismaClient();
 
@@ -41,14 +42,13 @@ export async function GET(
     }
 
     const userKey = (session.user as any).userKey;
-    const decryptedToken = decrypt(user.gitToken, userKey);
+    let decryptedToken = "";
+    try {
+      decryptedToken = decrypt(user.gitToken, userKey);
+    } catch (e) {
+      return new NextResponse("Invalid Personal Key", { status: 401 });
+    }
 
-    // 3. 構造 Gitea 的 Archive 網址
-    const gitUrl = (process.env.INTERNAL_GIT_URL || "").replace(/\/$/, "");
-    const urlParts = skill.repoUrl.replace(/\.git$/, "").split('/').filter(Boolean);
-    const repoName = urlParts.pop();
-    const owner = urlParts.pop();
-    
     const dbBranch = skill.versions[0].commitHash || "master";
     
     // 嘗試的分支清單：優先使用資料庫存的，失敗則嘗試 master 或 main
@@ -61,11 +61,15 @@ export async function GET(
 
     // 4. 嘗試下載
     for (const targetRef of branchesToTry) {
-      const zipUrl = `${gitUrl}/${owner}/${repoName}/archive/${targetRef}.zip`;
+      // Use unified git client to generate URL (Handles GitHub/Gitea differences)
+      const zipUrl = gitClient.getArchiveUrl(skill.repoUrl, targetRef);
       console.log(`[DOWNLOAD] Trying: ${zipUrl}`);
 
       const res = await fetch(zipUrl, {
-        headers: { 'Authorization': `token ${decryptedToken}` },
+        headers: { 
+          'Authorization': `token ${decryptedToken}`,
+          'User-Agent': 'Skill-Browser-Web' // GitHub requires User-Agent
+        },
         cache: 'no-store',
       });
 
