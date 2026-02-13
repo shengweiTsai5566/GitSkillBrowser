@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { decrypt } from "@/lib/encryption";
+import { gitClient } from "@/lib/git-client";
 
 const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
@@ -20,21 +21,16 @@ export async function GET(req: NextRequest) {
     if (!user?.gitToken) return NextResponse.json({ error: "Git token not found" }, { status: 400 });
 
     const userKey = (session.user as any).userKey;
-    const decryptedToken = decrypt(user.gitToken, userKey);
+    let decryptedToken = "";
+    try {
+      decryptedToken = decrypt(user.gitToken, userKey);
+    } catch (e) {
+      return NextResponse.json({ error: "Invalid Personal Key" }, { status: 401 });
+    }
     
-    // 安全處理 URL 結尾
-    const gitUrl = (process.env.INTERNAL_GIT_URL || "").split('/').filter(Boolean).join('/').replace(':/', '://');
-
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
-    const res = await fetch(`${gitUrl}/api/v1/users/shengwei.tsai/repos?limit=100`, {
-      headers: { "Authorization": `token ${decryptedToken}` },
-      cache: 'no-store'
-    });
-
-    if (!res.ok) throw new Error("Gitea error");
-
-    const repos = await res.json();
+    // Unified Git Client Call
+    const res = await gitClient.listUserRepos(decryptedToken);
+    const repos = res.data;
     
     // 取得目前使用者在資料庫中已註冊的所有 Skill
     const registeredSkills = await prisma.skill.findMany({
@@ -74,12 +70,14 @@ export async function GET(req: NextRequest) {
           isRegistered: !!registered,
           hasUpdate: hasUpdate,
           lastGitUpdate: repo.pushed_at,
-          localUpdate: latestVersion?.createdAt || null
+          localUpdate: latestVersion?.createdAt || null,
+          tags: registered?.tags || [] // Return tags if registered
         };
       });
 
     return NextResponse.json(myRepos);
   } catch (error: any) {
+    console.error("[GitRepos] Error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

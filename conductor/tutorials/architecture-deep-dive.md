@@ -64,9 +64,17 @@ Skill Browser 是一個基於 **Next.js (App Router)** 的全端應用程式，�
     *   紀錄 `commitHash`、`readmeContent` (快照)。
     *   每次同步 (Sync) 時，若檢測到新 Commit，則建立新 Version。
 
-### 3.3 Gitea 整合服務
-*   不依賴 Gitea 的 OAuth App 機制（因企業內部申請流程繁瑣），改採 **Personal Access Token (PAT)** 模式。
-*   **API Client**: 原生 `fetch` 封裝，手動處理 `api/v1` 路徑，以保持輕量與最大相容性（同時支援 GitHub/Gitea）。
+### 3.3 Git 整合服務 (Multi-Provider Support)
+本系統實作了智慧型 Git Adapter (`src/lib/git-client.ts`)，具備以下特性：
+*   **自動偵測 (Auto-Discovery)**：依據 `.env` 中的 `INTERNAL_GIT_URL` 自動判斷 Provider 類型（Gitea 或 GitHub）。
+*   **API 歸一化**：統一處理 Gitea 的 `/api/v1` 與 GitHub 的 REST API 差異（如搜尋路徑、Archive 下載格式）。
+*   **Raw Content 抓取**：針對不同平台採用最佳抓取策略（GitHub 採用 `Accept: application/vnd.github.v3.raw` 標頭以節省 Base64 解碼開銷）。
+
+### 3.4 標籤驅動搜尋系統 (Tag-based Discovery)
+為了提供比單純關鍵字更強大的搜尋體驗，我們實作了標籤管理系統：
+*   **多源標籤合併**：註冊時會將 `SKILL.md` 解析出的標籤與用戶手動輸入的標籤進行聯集去重。
+*   **高效聚合查詢**：透過 PostgreSQL 的 `unnest` 與 `count` 進行 API 端數據聚合 (`GET /api/tags`)，動態生成標籤雲。
+*   **OR 邏輯篩選**：搜尋引擎支援多選標籤過濾，底層使用 Prisma 的 `hasSome` 運算子實作。
 
 ---
 
